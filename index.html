@@ -1,32 +1,69 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ナンバーズ4オート</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+    input { font-size: 16px; padding: 10px; width: 100%; max-width: 420px; margin: 6px 0 14px; }
+    button { font-size: 16px; padding: 10px 14px; margin-right: 8px; }
+    #result { font-size: 42px; font-weight: 800; margin-top: 18px; }
+    .note { color: #555; font-size: 13px; }
+  </style>
 </head>
 <body>
+  <h1>ナンバーズ4 自動生成</h1>
 
-<h1>ナンバーズ4 自動生成</h1>
+  <div>
+    <label>ヒント1（例：7・3・2）</label><br />
+    <input id="hint1" placeholder="7・3・2 みたいに入力（空でもOK）" inputmode="numeric" />
+    <div class="note">数字と「・」以外が入ってもOK。数字だけ自動で拾うよ。</div>
+  </div>
 
-<button onclick="generate()">数字を生成する</button>
+  <div>
+    <label>ヒント2（例：4・1・9・5）</label><br />
+    <input id="hint2" placeholder="4・1・9・5 みたいに入力（空でもOK）" inputmode="numeric" />
+  </div>
 
-<p id="result" style="font-size:32px;font-weight:bold;margin-top:16px;"></p>
+  <button onclick="generateFromHints()">ヒントで生成（48＋2桁）</button>
+  <button onclick="generateRandom()">ヒントなし生成（48＋ランダム2桁）</button>
 
-<script>
-  function generate() {
-  let fixed = "48";                 // 軸
-  let hints = ["0","2","4","6","9"]; // ←ここをヒント候補にする
+  <div id="result"></div>
 
-  // ヒント候補からランダムで2つ選ぶ（同じ数字が出ることもある）
-  let a = hints[Math.floor(Math.random() * hints.length)];
-  let b = hints[Math.floor(Math.random() * hints.length)];
+  <script>
+    function extractDigits(str) {
+      // 0-9 だけ抜き出して配列にする
+      const m = (str || "").match(/\d/g);
+      return m ? m : [];
+    }
 
-  let num = fixed + a + b;
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
 
-  document.getElementById("result").textContent = num;
-}
-</script>
+    function generateRandom() {
+      let num = "48";
+      for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10);
+      document.getElementById("result").textContent = num;
+    }
 
+    function generateFromHints() {
+      const h1 = extractDigits(document.getElementById("hint1").value);
+      const h2 = extractDigits(document.getElementById("hint2").value);
+
+      // どっちかが空なら「ヒントなし」に自動フォールバック
+      if (h1.length === 0 || h2.length === 0) {
+        generateRandom();
+        return;
+      }
+
+      // ヒント1から1つ、ヒント2から1つ選んで 48 + (a)(b)
+      const a = pick(h1);
+      const b = pick(h2);
+
+      document.getElementById("result").textContent = "48" + a + b;
+    }
+  </script>
 </body>
 </html>
