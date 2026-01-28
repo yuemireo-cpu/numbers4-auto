@@ -15,12 +15,14 @@
 
 <script>
   function generate() {
-  let fixed = "48";   // ←ここが軸（あとで自由に変えられる）
-  let num = fixed;
+  let fixed = "48";                 // 軸
+  let hints = ["0","2","4","6","9"]; // ←ここをヒント候補にする
 
-  for (let i = 0; i < 2; i++) {
-    num += Math.floor(Math.random() * 10);
-  }
+  // ヒント候補からランダムで2つ選ぶ（同じ数字が出ることもある）
+  let a = hints[Math.floor(Math.random() * hints.length)];
+  let b = hints[Math.floor(Math.random() * hints.length)];
+
+  let num = fixed + a + b;
 
   document.getElementById("result").textContent = num;
 }
