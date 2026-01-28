@@ -3,82 +3,764 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ナンバーズ4オート</title>
+  <title>ナンバーズ4 最終形態（全部入り）</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
-    input { font-size: 16px; padding: 10px; width: 100%; max-width: 420px; margin: 6px 0 14px; }
-    button { font-size: 16px; padding: 10px 14px; margin-right: 8px; }
-    #result { font-size: 42px; font-weight: 800; margin-top: 18px; }
-    .note { color: #555; font-size: 13px; }
+    :root { --gap: 12px; }
+    body{
+      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      margin: 0; padding: 16px;
+      max-width: 860px;
+    }
+    h1{ font-size: 28px; margin: 0 0 10px; }
+    h2{ font-size: 16px; margin: 18px 0 10px; }
+    .card{
+      border: 1px solid #eee;
+      border-radius: 16px;
+      padding: 12px;
+      background: #fff;
+      margin-top: 10px;
+    }
+    label{ font-weight: 700; display:block; margin: 10px 0 6px; }
+    input, textarea, select{
+      width: 100%; box-sizing: border-box;
+      font-size: 16px; padding: 10px;
+      border: 1px solid #ddd; border-radius: 12px;
+    }
+    textarea{ min-height: 80px; resize: vertical; }
+    .row{ display:grid; grid-template-columns: 1fr; gap: var(--gap); }
+    @media (min-width: 740px){
+      .row{ grid-template-columns: 1fr 1fr; }
+    }
+    .toggles{
+      display:flex; flex-wrap:wrap; gap: 12px;
+      align-items:center; margin-top: 10px;
+    }
+    .toggles label{
+      display:flex; gap:8px; align-items:center;
+      margin:0; font-weight: 600;
+      user-select:none;
+    }
+    button{
+      font-size: 15px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      border: 0;
+      cursor: pointer;
+      background: #efefef;
+      margin-right: 8px;
+      margin-top: 10px;
+    }
+    button.primary{ background:#111; color:#fff; }
+    button.ghost{ background:#f6f6f6; }
+    .note{ font-size: 12px; color:#666; margin-top: 6px; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .resultBig{
+      font-size: 44px; font-weight: 900; letter-spacing: 2px;
+      margin: 10px 0 6px;
+    }
+    .grid2{ display:grid; grid-template-columns: 1fr; gap: var(--gap); }
+    @media (min-width: 740px){
+      .grid2{ grid-template-columns: 1fr 1fr; }
+    }
+    .list{
+      border: 1px solid #eee; background:#fafafa;
+      border-radius: 14px; padding: 12px;
+    }
+    .list h3{ margin: 0 0 10px; font-size: 16px; }
+    .nums{ font-size: 18px; line-height: 1.7; white-space: pre-wrap; }
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      background:#fff; border:1px solid #e7e7e7; margin: 6px 6px 0 0;
+      font-weight: 700;
+    }
+    .warn{ color:#b00020; font-weight: 800; margin-top: 10px; }
+    .ok{ color:#0a7; font-weight: 800; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>ナンバーズ4 自動生成</h1>
+  <h1>ナンバーズ4 最終形態（全部入り）</h1>
 
-  <div>
-    <label>ヒント1（例：7・3・2）</label><br />
-    <input id="hint1" placeholder="7・3・2 みたいに入力（空でもOK）" inputmode="numeric" />
-    <div class="note">数字と「・」以外が入ってもOK。数字だけ自動で拾うよ。</div>
+  <div class="row">
+    <div class="card">
+      <label>ヒント1（例：7・3・2 / 732）</label>
+      <input id="hint1" placeholder="空でもOK（数字だけ拾う）" inputmode="numeric" />
+
+      <label>ヒント2（例：4・1・9・5 / 4195）</label>
+      <input id="hint2" placeholder="空でもOK（数字だけ拾う）" inputmode="numeric" />
+
+      <label>前回当選（任意）</label>
+      <input id="prev" placeholder="例：2699" inputmode="numeric" maxlength="4" />
+
+      <label>前々回（任意）</label>
+      <input id="prev2" placeholder="例：2827" inputmode="numeric" maxlength="4" />
+
+      <label>直近10回（任意・4桁×10を貼る）</label>
+      <textarea id="recent10" placeholder="例：
+4141→2121→7202→7526→2300→7263→1632→6551→2827→2699"></textarea>
+
+      <div class="note">
+        ※ 直近10回は「自動引っ張り」の材料。<br>
+        ※ 18時ギリギリのリハーサル数字は入力しない（ゆうちゃん方針）。
+      </div>
+    </div>
+
+    <div class="card">
+      <label>軸（2桁・任意）</label>
+      <input id="axisInput" placeholder="例：48（空なら自動で軸を決める）" inputmode="numeric" maxlength="2" />
+
+      <div class="toggles">
+        <label><input type="checkbox" id="usePull" checked> 自動引っ張り</label>
+        <label><input type="checkbox" id="useUra" checked> 裏数字</label>
+        <label><input type="checkbox" id="useRenban" checked> 連番</label>
+        <label><input type="checkbox" id="useSum9"> 足す9</label>
+        <label><input type="checkbox" id="useConsecutive"> 連続数字</label>
+        <label><input type="checkbox" id="doubleBias" checked> ダブル優遇</label>
+        <label><input type="checkbox" id="allowRepeat" checked> 同一数字OK</label>
+      </div>
+
+      <label>除外する数字（任意）</label>
+      <input id="excludeDigits" placeholder="例：1379（数字だけ）" inputmode="numeric" />
+
+      <label>優先したい数字（任意・強制ではなく加点）</label>
+      <input id="preferDigits" placeholder="例：48 2699 などOK" inputmode="numeric" />
+
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>買い目数</label>
+          <select id="countStraight">
+            <option value="5" selected>ストレート 5口</option>
+            <option value="10">ストレート 10口</option>
+          </select>
+        </div>
+        <div>
+          <label>セット数</label>
+          <select id="countSet">
+            <option value="5" selected>セット 5口</option>
+            <option value="10">セット 10口</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="note">
+        ※ セット表示は「同じ4桁の並び替え」を1つ出します（セットは順不同想定）。
+      </div>
+    </div>
   </div>
 
-  <div>
-    <label>ヒント2（例：4・1・9・5）</label><br />
-    <input id="hint2" placeholder="4・1・9・5 みたいに入力（空でもOK）" inputmode="numeric" />
+  <div class="card">
+    <h2>平野式（簡易統合：表・裏・合算・合わせ）</h2>
+    <div class="row">
+      <div>
+        <label>平野式：基準数字（例：前回）</label>
+        <input id="hiranoA" placeholder="例：2699" inputmode="numeric" maxlength="4" />
+      </div>
+      <div>
+        <label>平野式：相手数字（例：前々回/指定）</label>
+        <input id="hiranoB" placeholder="例：2827（空でもOK）" inputmode="numeric" maxlength="4" />
+      </div>
+    </div>
+
+    <div class="toggles" style="margin-top:10px;">
+      <label><input type="checkbox" id="useHirano" checked> 平野式候補を生成に混ぜる</label>
+    </div>
+
+    <button class="ghost" onclick="calcHirano()">平野式を計算して候補表示</button>
+    <div id="hiranoOut" class="note"></div>
+    <div id="hiranoPills"></div>
+
+    <div class="note">
+      平野式の扱い：<br>
+      ・表＝入力数字の各桁<br>
+      ・裏＝裏数字マップ（ゆうちゃん定義：1↔6,2↔7,3↔8,4↔9,5↔0）<br>
+      ・合算＝AとBがある時、同位置の( A+B )%10（B空なら表の桁和%10 を1桁候補に追加）<br>
+      ・合わせ＝表と裏の(表+裏)%10（全桁）<br>
+      ※「候補数字（0〜9）」としてプールに入れます。
+    </div>
   </div>
 
-  <button onclick="generateFromHints()">ヒントで生成（軸なし）</button>
-<button onclick="generateRandom()">ヒントなし生成（完全ランダム）</button>
+  <div class="card">
+    <button class="primary" onclick="generateTickets()">買い目生成（ストレート＋セット）</button>
+    <button onclick="generateAxisExpand56()">軸固定・残り2桁を56本展開</button>
+    <button onclick="copyBoth()">買い目をまとめてコピー</button>
 
-  <div id="result"></div>
+    <div id="status" class="ok" style="display:none;"></div>
+    <div id="warn" class="warn" style="display:none;"></div>
 
-  <script>
-function extractDigits(str) {
-  return (str.match(/\d/g) || []);
-}
+    <div class="grid2 resultWrap">
+      <div class="list">
+        <h3>ストレート</h3>
+        <div id="straightList" class="nums mono"></div>
+      </div>
+      <div class="list">
+        <h3>セット</h3>
+        <div id="setList" class="nums mono"></div>
+      </div>
+    </div>
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+    <div class="list" style="margin-top:12px;">
+      <h3>56本展開</h3>
+      <div id="expand56" class="nums mono"></div>
+      <div class="note">ルール：軸2桁＋候補プールから残り2桁を「順序あり・重複なし」で最大56本作ります。</div>
+    </div>
 
-// 完全ランダム（軸なし）
-function generateRandom() {
-  let num = "";
-  for (let i = 0; i < 4; i++) {
-    num += Math.floor(Math.random() * 10);
-  }
-  document.getElementById("result").textContent = num;
-}
+    <div class="list" style="margin-top:12px;">
+      <h3>デバッグ（内部）</h3>
+      <div id="debug" class="nums mono"></div>
+    </div>
+  </div>
 
-// ヒントあり生成（自動絞り込み・軸なし）
-function generateFromHints() {
-  const h1 = extractDigits(document.getElementById("hint1").value);
-  const h2 = extractDigits(document.getElementById("hint2").value);
+<script>
+  // ゆうちゃん定義の裏数字
+  const uraMap = { "0":"5","5":"0","1":"6","6":"1","2":"7","7":"2","3":"8","8":"3","4":"9","9":"4" };
 
-  let pool = [];
-
-  // 両方あれば共通数字
-  if (h1.length && h2.length) {
-    pool = h1.filter(n => h2.includes(n));
-  }
-
-  // 共通がなければ全部まとめる
-  if (pool.length === 0) {
-    pool = [...new Set([...h1, ...h2])];
-  }
-
-  // それでも空なら完全ランダム
-  if (pool.length === 0) {
-    generateRandom();
-    return;
+  function digitsOnly(str){
+    const m = (str || "").match(/\d/g);
+    return m ? m : [];
   }
 
-  let num = "";
-  for (let i = 0; i < 4; i++) {
-    num += pick(pool);
+  function uniq(arr){
+    const s = new Set();
+    const out = [];
+    for(const x of arr){
+      if(!s.has(x)){ s.add(x); out.push(x); }
+    }
+    return out;
   }
 
-  document.getElementById("result").textContent = num;
-}
-  </script>
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function pick(arr){
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function showWarn(msg){
+    const el = document.getElementById("warn");
+    el.style.display = "block";
+    el.textContent = msg;
+  }
+  function hideWarn(){
+    const el = document.getElementById("warn");
+    el.style.display = "none";
+    el.textContent = "";
+  }
+  function showStatus(msg){
+    const el = document.getElementById("status");
+    el.style.display = "block";
+    el.textContent = msg;
+  }
+
+  // 直近10回の4桁を拾う（数字だけ→4桁ずつ）
+  function parseRecent10(){
+    const d = digitsOnly(document.getElementById("recent10").value);
+    const nums = [];
+    for(let i=0;i+3<d.length;i+=4){
+      nums.push(d[i]+d[i+1]+d[i+2]+d[i+3]);
+    }
+    return nums.slice(-10); // 最後10個
+  }
+
+  // スコアで数字を選ぶ（自動引っ張り用）
+  function buildDigitScores(){
+    const nums = parseRecent10(); // 古→新
+    const scores = Array(10).fill(0);
+
+    // 近いほど重み（最新ほど強い）
+    for(let idx=0; idx<nums.length; idx++){
+      const w = idx + 1; // 1..10
+      for(const ch of nums[idx]){
+        scores[parseInt(ch,10)] += w;
+      }
+    }
+
+    // 直近3回で繰り返しがあれば加点
+    const tail = nums.slice(-3).join("");
+    for(let digit=0; digit<=9; digit++){
+      const s = String(digit);
+      const cnt = (tail.match(new RegExp(s, "g")) || []).length;
+      if(cnt >= 2) scores[digit] += 6;
+      if(cnt >= 3) scores[digit] += 10;
+    }
+
+    // 逆張り（控えめ）：直近1回に出た数字は少し減点
+    const last1 = nums.slice(-1).join("");
+    for(let digit=0; digit<=9; digit++){
+      const s = String(digit);
+      const cnt = (last1.match(new RegExp(s, "g")) || []).length;
+      if(cnt >= 1) scores[digit] -= 3;
+      if(cnt >= 2) scores[digit] -= 3;
+    }
+    for(let digit=0; digit<=9; digit++){
+      if(scores[digit] < 0) scores[digit] = 0;
+    }
+
+    // preferDigits を少し加点
+    const prefers = digitsOnly(document.getElementById("preferDigits").value);
+    for(const p of prefers){
+      scores[parseInt(p,10)] += 6;
+    }
+
+    // 裏/連番のONはプール展開側で反映するので、ここでは触らない
+    return scores;
+  }
+
+  function pickByScore(scores){
+    const total = scores.reduce((a,b)=>a+b,0);
+    if(total <= 0) return String(Math.floor(Math.random()*10));
+    let r = Math.random() * total;
+    for(let i=0;i<scores.length;i++){
+      r -= scores[i];
+      if(r <= 0) return String(i);
+    }
+    return "0";
+  }
+
+  // 平野式：候補数字（0〜9）を作る
+  function hiranoCandidates(aStr, bStr){
+    const A = digitsOnly(aStr).slice(0,4);
+    const B = digitsOnly(bStr).slice(0,4);
+
+    const out = [];
+
+    // 表
+    for(const x of A) out.push(x);
+
+    // 裏（ゆうちゃん定義）
+    for(const x of A){
+      if(uraMap[x]) out.push(uraMap[x]);
+    }
+
+    // 合算
+    if(B.length === 4){
+      for(let i=0;i<4;i++){
+        const v = (parseInt(A[i],10) + parseInt(B[i],10)) % 10;
+        out.push(String(v));
+      }
+    } else if(A.length === 4){
+      const sum = (parseInt(A[0],10)+parseInt(A[1],10)+parseInt(A[2],10)+parseInt(A[3],10)) % 10;
+      out.push(String(sum));
+    }
+
+    // 合わせ（表と裏の和%10）
+    for(const x of A){
+      const u = uraMap[x];
+      if(u){
+        const v = (parseInt(x,10) + parseInt(u,10)) % 10;
+        out.push(String(v));
+      }
+    }
+
+    return uniq(out);
+  }
+
+  function calcHirano(){
+    const a = document.getElementById("hiranoA").value || document.getElementById("prev").value;
+    const b = document.getElementById("hiranoB").value || document.getElementById("prev2").value;
+    const cand = hiranoCandidates(a, b);
+
+    const out = document.getElementById("hiranoOut");
+    const pills = document.getElementById("hiranoPills");
+    out.innerHTML = `候補数字：<span class="mono">${cand.join(" ") || "なし"}</span>`;
+    pills.innerHTML = "";
+    for(const d of cand){
+      const s = document.createElement("span");
+      s.className = "pill mono";
+      s.textContent = d;
+      pills.appendChild(s);
+    }
+  }
+
+  // ON/OFFでプールを展開
+  function expandPool(poolDigits){
+    let pool = poolDigits.slice();
+
+    if(document.getElementById("useUra").checked){
+      for(const d of poolDigits){
+        if(uraMap[d]) pool.push(uraMap[d]);
+      }
+    }
+
+    if(document.getElementById("useRenban").checked){
+      for(const d of poolDigits){
+        const n = parseInt(d,10);
+        if(n-1 >= 0) pool.push(String(n-1));
+        if(n+1 <= 9) pool.push(String(n+1));
+      }
+    }
+
+    return uniq(pool);
+  }
+
+  // 制約
+  function hasSum9(numStr){
+    const a = numStr.split("").map(x=>parseInt(x,10));
+    for(let i=0;i<4;i++){
+      for(let j=i+1;j<4;j++){
+        if(a[i]+a[j]===9) return true;
+      }
+    }
+    return false;
+  }
+  function hasConsecutive(numStr){
+    const a = numStr.split("").map(x=>parseInt(x,10));
+    for(let i=0;i<4;i++){
+      for(let j=i+1;j<4;j++){
+        if(Math.abs(a[i]-a[j])===1) return true;
+      }
+    }
+    return false;
+  }
+
+  // ヒントから「共通」をヒント2順で取る
+  function commonInHint2Order(h1, h2){
+    const set1 = new Set(h1);
+    const seen = new Set();
+    const out = [];
+    for(const d of h2){
+      if(set1.has(d) && !seen.has(d)){
+        out.push(d); seen.add(d);
+      }
+    }
+    return out;
+  }
+
+  // 軸（2桁）を決める：手入力優先 → 共通 → 引っ張りスコア
+  function decideAxis(){
+    const axisIn = digitsOnly(document.getElementById("axisInput").value);
+    if(axisIn.length >= 2){
+      return axisIn[0] + axisIn[1];
+    }
+
+    const h1 = digitsOnly(document.getElementById("hint1").value);
+    const h2 = digitsOnly(document.getElementById("hint2").value);
+    const common = commonInHint2Order(h1, h2);
+
+    // 共通が2個以上なら、その中から2つ（同じでもOK＝ダブル）を決める
+    if(common.length >= 2){
+      // prefer があれば先に寄せる
+      const prefers = new Set(digitsOnly(document.getElementById("preferDigits").value));
+      let c = common.slice();
+      c.sort((a,b)=>{
+        const pa = prefers.has(a) ? 1 : 0;
+        const pb = prefers.has(b) ? 1 : 0;
+        return pb - pa; // prefer優先
+      });
+      const a = c[0];
+      const b = c[1] || c[0];
+      return a + b;
+    }
+
+    // 共通が1個なら、もう1つはスコアから
+    const scores = buildDigitScores();
+    let a = common[0] || pickByScore(scores);
+    // 2つめは同じになりにくく
+    const scores2 = scores.slice();
+    scores2[parseInt(a,10)] = Math.floor(scores2[parseInt(a,10)] * 0.3);
+    let b = pickByScore(scores2);
+    return a + b;
+  }
+
+  // 生成用プール（数字 0〜9）
+  function buildBasePool(){
+    const h1 = digitsOnly(document.getElementById("hint1").value);
+    const h2 = digitsOnly(document.getElementById("hint2").value);
+
+    let pool = [];
+
+    // ヒントが両方ある時：共通を強めに
+    if(h1.length && h2.length){
+      const common = h1.filter(x=>h2.includes(x));
+      if(common.length){
+        // 共通は強い材料として2回入れる（重み）
+        pool.push(...common, ...common);
+      }
+      // それぞれも少し入れる
+      pool.push(...h1, ...h2);
+    } else {
+      pool.push(...h1, ...h2);
+    }
+
+    // 自動引っ張り：スコアから1〜2個“種”を追加
+    if(document.getElementById("usePull").checked){
+      const scores = buildDigitScores();
+      const p1 = pickByScore(scores);
+      const scores2 = scores.slice();
+      scores2[parseInt(p1,10)] = Math.floor(scores2[parseInt(p1,10)] * 0.3);
+      const p2 = pickByScore(scores2);
+      pool.push(p1, p2);
+    }
+
+    // 前回/前々回の引っ張り（平均1-2個の思想）
+    const prev = digitsOnly(document.getElementById("prev").value);
+    const prev2 = digitsOnly(document.getElementById("prev2").value);
+    if(prev.length) pool.push(...prev);
+    if(prev2.length) pool.push(...prev2);
+
+    // preferDigits もプールに追加（重み）
+    const prefers = digitsOnly(document.getElementById("preferDigits").value);
+    if(prefers.length) pool.push(...prefers, ...prefers);
+
+    // 平野式候補
+    if(document.getElementById("useHirano").checked){
+      const a = document.getElementById("hiranoA").value || document.getElementById("prev").value;
+      const b = document.getElementById("hiranoB").value || document.getElementById("prev2").value;
+      const hc = hiranoCandidates(a, b);
+      pool.push(...hc, ...hc);
+    }
+
+    // 何もなければ0〜9
+    if(pool.length === 0){
+      pool = ["0","1","2","3","4","5","6","7","8","9"];
+    }
+
+    // 除外
+    const ex = new Set(digitsOnly(document.getElementById("excludeDigits").value));
+    pool = pool.filter(d => !ex.has(d));
+
+    // 展開（裏/連番）
+    pool = expandPool(pool);
+
+    // 再度除外
+    pool = pool.filter(d => !ex.has(d));
+
+    // 最終ユニーク
+    return uniq(pool);
+  }
+
+  // 4桁を1本作る
+  function makeOneNumber(axis2, pool){
+    const allowRepeat = document.getElementById("allowRepeat").checked;
+    const wantDoubleBias = document.getElementById("doubleBias").checked;
+
+    let digits = [];
+
+    // 先頭2桁（軸）
+    digits.push(axis2[0], axis2[1]);
+
+    // 残り2桁
+    const used = new Set(digits);
+
+    // ダブル優遇：残り2桁のどこかに同値を作りやすく
+    if(wantDoubleBias && Math.random() < 0.33){
+      const d = pick(pool);
+      digits.push(d);
+      digits.push(d);
+    } else {
+      while(digits.length < 4){
+        const d = pick(pool);
+        if(allowRepeat){
+          digits.push(d);
+        } else {
+          if(!used.has(d)){
+            digits.push(d);
+            used.add(d);
+          }
+        }
+      }
+    }
+
+    const num = digits.join("");
+
+    // 制約（足す9 / 連続）
+    if(document.getElementById("useSum9").checked && !hasSum9(num)) return null;
+    if(document.getElementById("useConsecutive").checked && !hasConsecutive(num)) return null;
+
+    return num;
+  }
+
+  // ストレート→セット用に並び替え1つ作る
+  function makeSetVariant(num){
+    const a = num.split("");
+    return shuffle(a).join("");
+  }
+
+  function generateTickets(){
+    hideWarn();
+    calcHirano(); // 候補表示も更新
+
+    const axis = decideAxis();
+    const pool = buildBasePool();
+
+    const nStraight = parseInt(document.getElementById("countStraight").value,10);
+    const nSet = parseInt(document.getElementById("countSet").value,10);
+
+    const straights = [];
+    const seen = new Set();
+    let guard = 0;
+
+    while(straights.length < nStraight && guard < 6000){
+      guard++;
+      const num = makeOneNumber(axis, pool);
+      if(!num) continue;
+      if(seen.has(num)) continue;
+      seen.add(num);
+      straights.push(num);
+    }
+
+    if(straights.length < nStraight){
+      showWarn(`条件が厳しくて ${nStraight} 口作れなかった（${straights.length}口）。「除外」「足す9」「連続」「同一数字OK」など見直してね。`);
+    } else {
+      showStatus(`生成OK（軸=${axis} / プール=${pool.join("")}）`);
+    }
+
+    // セット：ストレートから作る（足りない分は追加生成）
+    const sets = [];
+    const setSeen = new Set();
+    for(const s of straights){
+      if(sets.length >= nSet) break;
+      const v = makeSetVariant(s);
+      if(!setSeen.has(v)){
+        setSeen.add(v);
+        sets.push(v);
+      }
+    }
+    // まだ足りなければ追加で作る（同じ軸＆プール）
+    let guard2 = 0;
+    while(sets.length < nSet && guard2 < 6000){
+      guard2++;
+      const num = makeOneNumber(axis, pool);
+      if(!num) continue;
+      const v = makeSetVariant(num);
+      if(setSeen.has(v)) continue;
+      setSeen.add(v);
+      sets.push(v);
+    }
+
+    document.getElementById("straightList").textContent = straights.map((x,i)=>`${String(i+1).padStart(2,"0")}. ${x}`).join("\n");
+    document.getElementById("setList").textContent = sets.map((x,i)=>`${String(i+1).padStart(2,"0")}. ${x}`).join("\n");
+
+    // デバッグ
+    document.getElementById("debug").textContent =
+`axis=${axis}
+pool=${pool.join(" ")}
+hint1=${digitsOnly(document.getElementById("hint1").value).join("")}
+hint2=${digitsOnly(document.getElementById("hint2").value).join("")}
+prev=${digitsOnly(document.getElementById("prev").value).join("")}
+prev2=${digitsOnly(document.getElementById("prev2").value).join("")}
+recent10=${parseRecent10().join(" ")}
+hirano=${document.getElementById("useHirano").checked ? "ON" : "OFF"} (${hiranoCandidates(document.getElementById("hiranoA").value || document.getElementById("prev").value, document.getElementById("hiranoB").value || document.getElementById("prev2").value).join(" ")})
+constraints=sum9:${document.getElementById("useSum9").checked} consecutive:${document.getElementById("useConsecutive").checked} repeat:${document.getElementById("allowRepeat").checked}`;
+  }
+
+  function generateAllRandom(){
+    document.getElementById("axisInput").value = ""; // 軸も自動に任せる
+    document.getElementById("hint1").value = "";
+    document.getElementById("hint2").value = "";
+    generateTickets();
+  }
+
+  function generateAllFromHints(){
+    generateTickets();
+  }
+
+  // 56本展開：軸2桁＋候補プールから残り2桁を「順序あり・重複なし」で最大56本
+  function generateAxisExpand56(){
+    hideWarn();
+    calcHirano();
+
+    const axis = decideAxis();
+    const pool = buildBasePool();
+
+    // 残り2桁用：できれば軸と同じ数字は避けたい（ただし除外ではない）
+    const axisSet = new Set(axis.split(""));
+    const candidate = pool.slice();
+
+    const out = [];
+    const seen = new Set();
+    let guard = 0;
+
+    // 軸固定・残り2桁を順序ありで作る
+    for(let i=0; i<candidate.length && out.length < 56; i++){
+      for(let j=0; j<candidate.length && out.length < 56; j++){
+        if(i === j) continue; // 重複なし（同じ数字2つはここでは作らない）
+        const a = candidate[i];
+        const b = candidate[j];
+
+        // なるべく軸被りを避ける（ただし候補が少ない時はOK）
+        if(candidate.length >= 7){
+          if(axisSet.has(a) || axisSet.has(b)) continue;
+        }
+
+        const num = axis + a + b;
+
+        // 制約を反映
+        if(document.getElementById("useSum9").checked && !hasSum9(num)) continue;
+        if(document.getElementById("useConsecutive").checked && !hasConsecutive(num)) continue;
+
+        if(!seen.has(num)){
+          seen.add(num);
+          out.push(num);
+        }
+      }
+    }
+
+    // 足りなければ、軸被り許可で埋める
+    if(out.length < 56){
+      for(let i=0; i<candidate.length && out.length < 56; i++){
+        for(let j=0; j<candidate.length && out.length < 56; j++){
+          if(i === j) continue;
+          const num = axis + candidate[i] + candidate[j];
+          if(document.getElementById("useSum9").checked && !hasSum9(num)) continue;
+          if(document.getElementById("useConsecutive").checked && !hasConsecutive(num)) continue;
+          if(!seen.has(num)){
+            seen.add(num);
+            out.push(num);
+          }
+        }
+      }
+    }
+
+    // それでも足りなければ、同じ数字ペアも解禁して埋める
+    if(out.length < 56){
+      for(let i=0; i<candidate.length && out.length < 56; i++){
+        const num = axis + candidate[i] + candidate[i];
+        if(document.getElementById("useSum9").checked && !hasSum9(num)) continue;
+        if(document.getElementById("useConsecutive").checked && !hasConsecutive(num)) continue;
+        if(!seen.has(num)){
+          seen.add(num);
+          out.push(num);
+        }
+      }
+    }
+
+    document.getElementById("expand56").textContent = out.map((x,i)=>`${String(i+1).padStart(2,"0")}. ${x}`).join("\n");
+    showStatus(`56本展開：${out.length}本（軸=${axis} / プール=${pool.join(" ")}）`);
+
+    document.getElementById("debug").textContent =
+`expand56 axis=${axis}
+pool=${pool.join(" ")}
+outCount=${out.length}`;
+  }
+
+  async function copyBoth(){
+    const s = document.getElementById("straightList").textContent.trim();
+    const t = document.getElementById("setList").textContent.trim();
+    const e = document.getElementById("expand56").textContent.trim();
+    const text =
+`【ストレート】
+${s || "(未生成)"}
+
+【セット】
+${t || "(未生成)"}
+
+【56本展開】
+${e || "(未生成)"}`
+    try{
+      await navigator.clipboard.writeText(text);
+      showStatus("コピーしました");
+    }catch(e){
+      showWarn("コピーできなかった：iPhoneの設定やブラウザ制限があるかも。長押しで選択コピーしてね。");
+    }
+  }
+
+  // 初期：平野式候補を表示更新
+  calcHirano();
+</script>
 </body>
 </html>
