@@ -178,11 +178,61 @@
       return `${i+1}位  ${t.badge}【${t.label}】  ${r.n}`;
     }).join("\n");
   }
+// ヒント文字列から「必ず2つ」だけ強い数字を選ぶ
+function pick2FromHint(str, s, prev, prev2){
+  const digits = (str || "").match(/\d/g) || [];
+  const uniq = [...new Set(digits)].map(Number);
 
+  // 2つ以下ならそのまま
+  if (uniq.length <= 2) return uniq;
+
+  // 前回・前々回からの引っ張り
+  const pull = new Set(
+    ((prev || "") + (prev2 || "")).match(/\d/g)?.map(Number) || []
+  );
+
+  const score = (d) => {
+    let sc = 0;
+
+    // 出現頻度（直近10・前回・前々回）
+    sc += (s?.[d] ?? 0) * 10;
+
+    // 裏数字補正
+    if (ura[d] !== undefined) sc += 2;
+
+    // 引っ張り
+    if (pull.has(d)) sc += 30;
+
+    // 足す9
+    if (uniq.some(x => x !== d && x + d === 9)) sc += 15;
+
+    // 連番
+    if (uniq.some(x => x !== d && Math.abs(x - d) === 1)) sc += 8;
+
+    return sc;
+  };
+
+  return uniq.sort((a,b)=>score(b)-score(a)).slice(0,2);
+}
   // ===== 生成本体（安定版：同じ入力→同じ結果）=====
   function generate(){
-    const hint1 = d(document.getElementById("hint1").value);
-    const hint2 = d(document.getElementById("hint2").value);
+    const s = scoreDigits();
+const prevStr  = document.getElementById("prev").value;
+const prev2Str = document.getElementById("prev2").value;
+
+const hint1 = pick2FromHint(
+  document.getElementById("hint1").value,
+  s,
+  prevStr,
+  prev2Str
+);
+
+const hint2 = pick2FromHint(
+  document.getElementById("hint2").value,
+  s,
+  prevStr,
+  prev2Str
+);
     const s = scoreDigits();
     const axis = chooseAxis(hint1, hint2, s);
     const pool = buildPool(hint1, hint2, s);
