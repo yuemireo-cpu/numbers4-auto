@@ -161,7 +161,7 @@
     </div>
 
     <div class="toggles" style="margin-top:10px;">
-      <label><input type="checkbox" id="useHirano" checked> 平野式候補を生成に混ぜる</label>
+      <label><id="useHirano" checked> 平野式候補を生成に混ぜる</label>
     </div>
 
     <button class="ghost" onclick="calcHirano()">平野式を計算して候補表示</button>
@@ -180,7 +180,7 @@
 
   <div class="card">
     <button class="primary" onclick="generateTickets()">買い目生成（ストレート＋セット）</button>
-    <button onclick="generateAxisExpand56()">軸固定・残り2桁を56本展開</button>
+    軸固定・残り2桁を56本展開</button>
     <button onclick="copyBoth()">買い目をまとめてコピー</button>
 
     <div id="status" class="ok" style="display:none;"></div>
@@ -198,8 +198,6 @@
     </div>
 
     <div class="list" style="margin-top:12px;">
-      <h3>56本展開</h3>
-      <div id="expand56" class="nums mono"></div>
       <div class="note">ルール：軸2桁＋候補プールから残り2桁を「順序あり・重複なし」で最大56本作ります。</div>
     </div>
 
