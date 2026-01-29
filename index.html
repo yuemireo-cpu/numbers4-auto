@@ -48,10 +48,25 @@
 
   <h2 style="margin-top:22px;">ストレート（ランキング）</h2>
   <div id="dayPower" class="day"></div>
-  <pre id="straight"></pre>
+  
 
   <h2 style="margin-top:22px;">セット（ランキング）</h2>
-  <pre id="set"></pre>
+  <h2>ストレート（ランキング）</h2>
+<div id="dayPower" style="font-weight:bold;margin:8px 0;"></div>
+
+<h3>本命（強）</h3>
+<pre id="straightMain"></pre>
+
+<h3>保険（中・弱）</h3>
+<pre id="straightIns"></pre>
+
+<h2>セット（ランキング）</h2>
+
+<h3>本命（強）</h3>
+<pre id="setMain"></pre>
+
+<h3>保険（中・弱）</h3>
+<pre id="setIns"></pre>
 
 <script>
   // ===== ユーティリティ =====
@@ -161,7 +176,32 @@
     if(r >= 0.86) return { badge:"★★",  label:"中" };
     return { badge:"★",   label:"弱" };
   }
+function splitRanked(ranked, limit = 10){
+  if(!ranked || ranked.length === 0) return { main: [], ins: [] };
 
+  const best = ranked[0].sc;
+  const rows = ranked.slice(0, limit).map((r, i) => {
+    const t = tierLabel(r.sc, best);
+    return {
+      i: i + 1,
+      num: r.n || r.num,
+      badge: t.badge,
+      label: t.label
+    };
+  });
+
+  return {
+    main: rows.filter(x => x.label === "強"),
+    ins : rows.filter(x => x.label !== "強")
+  };
+}
+
+function formatRows(rows){
+  if(!rows || rows.length === 0) return "（なし）";
+  return rows.map(x =>
+    `${x.i}位  ${x.badge} [${x.label}]  ${x.num}`
+  ).join("\n");
+}
   // 「今日は強い日」判定（表示された口数で判定）
   function judgeDayPower(count){
     if(count <= 5) return "🔥 今日は強い日（集中勝負）";
