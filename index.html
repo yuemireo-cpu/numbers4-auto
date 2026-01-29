@@ -1,143 +1,235 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ナンバーズ4 完成版</title>
-<style>
-body{font-family:sans-serif;padding:16px}
-input,button{font-size:16px;padding:8px;width:100%;margin:6px 0}
-button{background:#111;color:#fff;border-radius:20px}
-pre{background:#f7f7f7;padding:12px;border-radius:12px}
-h2{margin-top:20px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ナンバーズ4 完成版</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;padding:16px;max-width:860px;margin:auto}
+    h1{font-size:34px;margin:10px 0 18px}
+    input,textarea,button,select{font-size:16px;padding:12px;width:100%;box-sizing:border-box;margin:8px 0;border-radius:14px;border:1px solid #e5e5e5}
+    textarea{min-height:90px;resize:vertical}
+    button{background:#111;color:#fff;border:none;border-radius:999px;padding:16px;font-weight:800}
+    .box{background:#fafafa;border:1px solid #eee;border-radius:16px;padding:14px;margin-top:12px}
+    .label{font-weight:800;margin-top:6px}
+    pre{white-space:pre-wrap;background:#f7f7f7;border-radius:14px;padding:12px;border:1px solid #eee}
+    .day{font-weight:900;margin:8px 0 0}
+    .note{color:#666;font-size:12px;margin-top:6px;line-height:1.5}
+  </style>
 </head>
 <body>
 
-<h1>ナンバーズ4 完成版</h1>
+  <h1>ナンバーズ4 完成版</h1>
 
-<input id="hint1" placeholder="ヒント1 例：168">
-<input id="hint2" placeholder="ヒント2 例：3920">
-<input id="prev" placeholder="前回 例：5105">
-<input id="prev2" placeholder="前々回 例：4588">
-<textarea id="recent" placeholder="直近10回 4桁を続けて貼る"></textarea>
+  <div class="box">
+    <div class="label">ヒント1（例：168 / 1・6・8）</div>
+    <input id="hint1" inputmode="numeric" placeholder="ヒント1 例：168">
 
-<button onclick="generate()">番号を生成する</button>
+    <div class="label">ヒント2（例：3920 / 3・9・2・0）</div>
+    <input id="hint2" inputmode="numeric" placeholder="ヒント2 例：3920">
 
-<h2>ストレート（ランキング）</h2>
-<pre id="straight"></pre>
+    <div class="label">前回（任意）</div>
+    <input id="prev" inputmode="numeric" placeholder="前回 例：5105" maxlength="4">
 
-<h2>セット（ランキング）</h2>
-<pre id="set"></pre>
+    <div class="label">前々回（任意）</div>
+    <input id="prev2" inputmode="numeric" placeholder="前々回 例：4588" maxlength="4">
+
+    <div class="label">直近10回（任意・4桁×10を貼る）</div>
+    <textarea id="recent" placeholder="例：
+4141→2121→7202→7526→2300→7263→1632→6551→2827→2699"></textarea>
+
+    <div class="note">
+      ※同じ入力なら何回押しても同じ結果（ブレない）<br>
+      ※18時ギリギリのリハーサル数字は入力しない（ゆうちゃん方針）
+    </div>
+
+    <button onclick="generate()">番号を生成する</button>
+  </div>
+
+  <h2 style="margin-top:22px;">ストレート（ランキング）</h2>
+  <div id="dayPower" class="day"></div>
+  <pre id="straight"></pre>
+
+  <h2 style="margin-top:22px;">セット（ランキング）</h2>
+  <pre id="set"></pre>
 
 <script>
-const ura={0:5,5:0,1:6,6:1,2:7,7:2,3:8,8:3,4:9,9:4};
+  // ===== ユーティリティ =====
+  const ura = {0:5,5:0,1:6,6:1,2:7,7:2,3:8,8:3,4:9,9:4};
 
-function d(str){return (str||"").match(/\d/g)||[]}
+  function d(str){ return (str || "").match(/\d/g) || []; }
 
-function scoreDigits(){
-  const s=Array(10).fill(0);
-  d(document.getElementById("recent").value).forEach(x=>s[x]+=1);
-  d(document.getElementById("prev").value).forEach(x=>s[x]+=3);
-  d(document.getElementById("prev2").value).forEach(x=>s[x]+=2);
-  return s;
-}
-
-function chooseAxis(h1,h2,s){
-  const c=h1.filter(x=>h2.includes(x));
-  if(c.length>=2) return c.slice(0,2);
-  if(c.length===1){
-    let b=[...h1,...h2].filter(x=>x!==c[0])
-      .sort((a,b)=>s[b]-s[a])[0];
-    return [c[0],b];
+  function uniq(arr){
+    const s = new Set(), out=[];
+    for(const x of arr){ if(!s.has(x)){ s.add(x); out.push(x); } }
+    return out;
   }
-  const all=[...h1,...h2];
-  return all.sort((a,b)=>s[b]-s[a]).slice(0,2);
-}
 
-function buildPool(h1,h2,s){
-  let p=[...h1,...h2];
-  Object.keys(ura).forEach(k=>p.push(ura[k]));
-  p.forEach(x=>{if(x>0)p.push(x-1);if(x<9)p.push(+x+1)});
-  Object.keys(s).forEach(k=>{for(let i=0;i<s[k];i++)p.push(k)});
-  return [...new Set(p)];
-}
-
-function rank(nums){
-  return nums.map(n=>{
-    let sc=0;
-    const a=n.split("").map(Number);
-    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
-      if(a[i]+a[j]===9)sc+=3;
-      if(Math.abs(a[i]-a[j])===1)sc+=2;
+  // 文字列→安定シード（同じ入力なら同じ乱数列）
+  function hash32(str){
+    let h = 2166136261;
+    for(let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-    return {n,sc};
-  }).sort((a,b)=>b.sc-a.sc);
-}
-
-function generate(){
-  const h1=d(hint1.value), h2=d(hint2.value);
-  const s=scoreDigits();
-  const axis=chooseAxis(h1,h2,s);
-  const pool=buildPool(h1,h2,s);
-
-  let list=[];
-  while(list.length<100){
-    let n=[axis[0],axis[1]];
-    while(n.length<4)n.push(pool[Math.floor(Math.random()*pool.length)]);
-    list.push(n.join(""));
+    return h >>> 0;
   }
-// ===== ランキング表示（おすすめ強度つき）=====
-function tierLabel(score, best){
-  if(best <= 0) return { badge:"☆", label:"弱" };
-  const r = score / best;
+  function mulberry32(seed){
+    return function(){
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
 
-  if(r >= 0.92) return { badge:"★★★", label:"強" };
-  if(r >= 0.86) return { badge:"★★",  label:"中" };
-  return { badge:"☆", label:"弱" };
-}
+  function pick(pool, rand){
+    return pool[Math.floor(rand() * pool.length)];
+  }
 
-function formatRanked(ranked, limit = 10){
-  if(!ranked || ranked.length === 0) return "";
+  // ===== スコア（材料の重み）=====
+  function scoreDigits(){
+    const s = Array(10).fill(0);
 
-  const best = ranked[0].sc;
-  return ranked.slice(0, limit).map((r, i) => {
-    const t = tierLabel(r.sc, best);
-    return `${i+1}位  ${t.badge}［${t.label}］ ${r.n}`;
-  }).join("\n");
-}
+    // 直近10回：出現した桁を+1
+    d(document.getElementById("recent").value).forEach(x => s[+x] += 1);
 
-// ranked は既に作られている前提
-document.getElementById("straight").textContent =
-  formatRanked(ranked, 10);
+    // 前回+3 / 前々回+2（ゆうちゃんの「引っ張り」寄せ）
+    d(document.getElementById("prev").value).forEach(x => s[+x] += 3);
+    d(document.getElementById("prev2").value).forEach(x => s[+x] += 2);
 
-document.getElementById("set").textContent =
-  formatRanked(
-    ranked.map(r => ({
-      n: r.n.split("").sort().join(""),
-      sc: r.sc
-    })),
-    10
-  );
-}// ===== ランキング表示用（強弱＋★）=====
-function tierLabel(score, best){
-  if(best <= 0) return { badge:"★", level:"弱" };
-  const r = score / best;
+    return s;
+  }
 
-  if(r >= 0.92) return { badge:"★★★", level:"強" };
-  if(r >= 0.86) return { badge:"★★", level:"中" };
-  return { badge:"★", level:"弱" };
-}
+  // 軸2桁：ヒント共通優先→なければスコア上位
+  function chooseAxis(h1, h2, s){
+    const common = h1.filter(x => h2.includes(x));
+    if(common.length >= 2) return common.slice(0,2);
+    if(common.length === 1){
+      const rest = [...h1, ...h2].filter(x => x !== common[0]);
+      const b = rest.sort((a,b)=> s[+b] - s[+a])[0] || common[0];
+      return [common[0], b];
+    }
+    const all = [...h1, ...h2];
+    if(all.length >= 2) return all.sort((a,b)=> s[+b] - s[+a]).slice(0,2);
+    // 何もない時の保険
+    return ["4","8"];
+  }
 
-function formatRankedList(ranked, limit = 10){
-  if(!ranked || ranked.length === 0) return "";
+  // プール：ヒント＋裏数字＋±1＋スコアで重み
+  function buildPool(h1, h2, s){
+    let p = [...h1, ...h2];
 
-  const best = ranked[0].sc;
-  return ranked.slice(0, limit).map((r, i) => {
-    const t = tierLabel(r.sc, best);
-    return `${i+1}位  ${t.badge} ${t.level}  ${r.num}`;
-  }).join("\n");
-}
+    // 裏数字
+    Object.keys(ura).forEach(k => p.push(String(ura[k])));
+
+    // 連番（±1）
+    p.forEach(x => {
+      const n = +x;
+      if(n > 0) p.push(String(n-1));
+      if(n < 9) p.push(String(n+1));
+    });
+
+    // スコア分だけ数字を追加（重み付け）
+    for(let digit=0; digit<=9; digit++){
+      for(let i=0; i<s[digit]; i++) p.push(String(digit));
+    }
+
+    return uniq(p);
+  }
+
+  // ===== ランキング（評価軸）=====
+  // 「足す9」「連番」要素でスコア。※ここは好みで重み変更OK
+  function rank(nums){
+    return nums.map(n=>{
+      let sc=0;
+      const a = n.split("").map(Number);
+
+      for(let i=0;i<4;i++) for(let j=i+1;j<4;j++){
+        if(a[i]+a[j]===9) sc += 3;                 // 足す9
+        if(Math.abs(a[i]-a[j])===1) sc += 2;      // 連番
+      }
+      return { n, sc };
+    }).sort((A,B)=>B.sc - A.sc);
+  }
+
+  // 強さラベル（best比）
+  function tierLabel(score, best){
+    if(best <= 0) return { badge:"★", label:"弱" };
+    const r = score / best;
+    if(r >= 0.92) return { badge:"★★★", label:"強" };
+    if(r >= 0.86) return { badge:"★★",  label:"中" };
+    return { badge:"★",   label:"弱" };
+  }
+
+  // 「今日は強い日」判定（表示された口数で判定）
+  function judgeDayPower(count){
+    if(count <= 5) return "🔥 今日は強い日（集中勝負）";
+    if(count <= 8) return "◎ 普通の日（バランス）";
+    return "△ 分散の日（無理しない）";
+  }
+
+  // 表示整形： 1位 ★★★【強】 1234
+  function formatRanked(ranked){
+    if(!ranked || ranked.length === 0) return "";
+    const best = ranked[0].sc;
+    return ranked.map((r,i)=>{
+      const t = tierLabel(r.sc, best);
+      return `${i+1}位  ${t.badge}【${t.label}】  ${r.n}`;
+    }).join("\n");
+  }
+
+  // ===== 生成本体（安定版：同じ入力→同じ結果）=====
+  function generate(){
+    const hint1 = d(document.getElementById("hint1").value);
+    const hint2 = d(document.getElementById("hint2").value);
+    const s = scoreDigits();
+    const axis = chooseAxis(hint1, hint2, s);
+    const pool = buildPool(hint1, hint2, s);
+
+    // 入力全部からシード作って、乱数を固定化
+    const seedStr =
+      document.getElementById("hint1").value + "|" +
+      document.getElementById("hint2").value + "|" +
+      document.getElementById("prev").value  + "|" +
+      document.getElementById("prev2").value + "|" +
+      document.getElementById("recent").value;
+
+    const rand = mulberry32(hash32(seedStr));
+
+    // 候補を作る（100本）※同じ入力なら必ず同じ100本
+    let list = [];
+    while(list.length < 100){
+      let n = [axis[0], axis[1]];
+      while(n.length < 4) n.push(pick(pool, rand));
+      list.push(n.join(""));
+    }
+
+    // ユニーク化→ランク付け
+    const ranked = rank(uniq(list));
+
+    // ★「勝負数を絞る」：1位スコアの92%以上だけ残す（最大10口）
+    let top = [];
+    if(ranked.length > 0){
+      const best = ranked[0].sc;
+      const threshold = best * 0.92;
+      top = ranked.filter(r => r.sc >= threshold);
+      if(top.length > 10) top = top.slice(0,10);
+    }
+
+    // 日の強さ表示
+    document.getElementById("dayPower").textContent =
+      (top.length ? judgeDayPower(top.length) : "—");
+
+    // ストレート表示
+    document.getElementById("straight").textContent = formatRanked(top);
+
+    // セット表示（同じ並び替え＝ソートした4桁をセット扱いにしてランキング）
+    const setNums = uniq(top.map(r => r.n.split("").sort().join("")));
+    const setRanked = rank(setNums);
+    // setRanked の best に合わせてラベル付けしたいので formatRanked を流用
+    document.getElementById("set").textContent = formatRanked(setRanked.slice(0,10));
+  }
 </script>
 
 </body>
